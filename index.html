@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1565C0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>習慣集點獎勵</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    :root {
+      --b1:#0D47A1; --b2:#1565C0; --b3:#1976D2; --b4:#42A5F5; --b5:#BBDEFB; --b6:#E3F2FD;
+      --bg:#EEF4FF; --white:#fff; --text:#1A237E; --t2:#546E7A; --t3:#90A4AE;
+      --border:#CFD8E3; --sh:0 2px 14px rgba(13,71,161,.09); --sh2:0 4px 22px rgba(13,71,161,.14);
+      --green:#2E7D32; --green-bg:#E8F5E9;
+    }
+
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',sans-serif;
+      background:var(--bg); color:var(--text);
+      min-height:100vh; max-width:430px; margin:0 auto; padding-bottom:82px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background:linear-gradient(150deg,var(--b1),var(--b3));
+      color:white; padding:52px 20px 14px;
+    }
+    .hdr-row { display:flex; align-items:flex-start; justify-content:space-between; }
+    .hdr-title { font-size:1.28rem; font-weight:800; }
+    .hdr-sub   { font-size:0.72rem; opacity:.72; margin-top:3px; }
+    .pts-chip {
+      background:rgba(255,255,255,.18); border:1.5px solid rgba(255,255,255,.28);
+      border-radius:22px; padding:5px 14px; text-align:center; white-space:nowrap;
+    }
+    .pts-chip .n { font-size:1.15rem; font-weight:800; line-height:1; }
+    .pts-chip .l { font-size:0.58rem; opacity:.78; margin-top:2px; }
+    .hdr-bar-wrap {
+      margin-top:11px; background:rgba(255,255,255,.2);
+      border-radius:6px; height:6px; overflow:hidden;
+    }
+    .hdr-bar { height:100%; background:rgba(255,255,255,.88); border-radius:6px; transition:width .5s ease; }
+    .hdr-bar-lbl { font-size:.65rem; opacity:.68; margin-top:4px; text-align:right; }
+
+    /* ── Nav ── */
+    .bottom-nav {
+      position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+      width:100%; max-width:430px;
+      background:white; border-top:1.5px solid var(--border);
+      display:flex; z-index:200;
+      box-shadow:0 -2px 18px rgba(13,71,161,.08);
+    }
+    .nav-btn {
+      flex:1; padding:10px 0 8px;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      cursor:pointer; color:var(--t3); border:none; background:none;
+      font-size:.63rem; font-weight:600; font-family:inherit; letter-spacing:.2px;
+      transition:color .18s;
+    }
+    .nav-btn.active { color:var(--b2); }
+    .nav-btn svg { width:21px; height:21px; stroke-width:1.8; }
+
+    /* ── Pages ── */
+    .page { display:none; padding:14px; }
+    .page.active { display:block; }
+
+    /* ── Cards ── */
+    .card { background:var(--white); border-radius:18px; padding:16px; box-shadow:var(--sh); margin-bottom:12px; }
+    .card-title { font-size:.72rem; font-weight:700; color:var(--t2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; }
+
+    /* ── TODAY ── */
+    .date-lbl { font-size:.78rem; color:var(--t2); text-align:center; margin-bottom:12px; font-weight:500; }
+    .summary-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+    .sbox { background:var(--b6); border-radius:14px; padding:12px 10px; text-align:center; }
+    .sbox .sv { font-size:1.75rem; font-weight:800; color:var(--b2); line-height:1; }
+    .sbox .sl { font-size:.62rem; color:var(--t2); margin-top:3px; font-weight:600; }
+
+    /* habit / task list */
+    .list-section { margin-bottom:12px; }
+    .list-header {
+      font-size:.78rem; font-weight:700; color:var(--t2);
+      margin-bottom:8px; padding-left:2px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .list-header .badge {
+      background:var(--b5); color:var(--b1);
+      border-radius:10px; padding:2px 8px; font-size:.65rem; font-weight:700;
+    }
+    .item-row {
+      background:white; border:2px solid var(--border);
+      border-radius:13px; padding:13px 15px;
+      display:flex; align-items:center; gap:11px;
+      cursor:pointer; user-select:none;
+      transition:border-color .18s, background .18s, transform .1s;
+      margin-bottom:8px;
+    }
+    .item-row:active { transform:scale(.975); }
+    .item-row.done {
+      border-color:var(--b3);
+      background:linear-gradient(135deg,#F0F6FF,#E8F1FF);
+    }
+    .item-row.task-done {
+      border-color:#4CAF50;
+      background:linear-gradient(135deg,#F1FBF2,#E8F5E9);
+    }
+    .chk {
+      width:27px; height:27px; border-radius:50%;
+      border:2px solid var(--border); flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .2s;
+    }
+    .item-row.done .chk { background:var(--b3); border-color:var(--b3); }
+    .item-row.task-done .chk { background:#4CAF50; border-color:#4CAF50; }
+    .chk::after {
+      content:''; width:9px; height:6px;
+      border-left:2.5px solid white; border-bottom:2.5px solid white;
+      transform:rotate(-45deg) translate(1px,-1px);
+      opacity:0; transition:opacity .15s;
+    }
+    .item-row.done .chk::after,
+    .item-row.task-done .chk::after { opacity:1; }
+    .item-name { flex:1; font-size:.93rem; font-weight:500; }
+    .item-row.done      .item-name { color:var(--b2); font-weight:600; }
+    .item-row.task-done .item-name { color:var(--green); font-weight:600; text-decoration:line-through; opacity:.75; }
+    .pts-badge {
+      font-size:.7rem; font-weight:700; padding:3px 9px;
+      border-radius:20px; background:var(--b6); color:var(--t2);
+      white-space:nowrap;
+    }
+    .item-row.done      .pts-badge { background:var(--b3); color:white; }
+    .item-row.task-done .pts-badge { background:#4CAF50; color:white; }
+
+    .empty-tip { text-align:center; padding:24px 16px; color:var(--t3); }
+    .empty-tip .ei { font-size:2.2rem; margin-bottom:8px; }
+    .empty-tip p { font-size:.83rem; line-height:1.7; }
+    .pill-btn {
+      margin-top:12px; background:var(--b2); color:white;
+      border:none; border-radius:22px; padding:9px 20px;
+      font-size:.85rem; font-weight:700; cursor:pointer; font-family:inherit;
+    }
+
+    /* ── STAMP CARD ── */
+    .cs-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+    .cs-box { background:var(--b6); border-radius:14px; padding:12px 8px; text-align:center; }
+    .cs-box.hi { background:var(--b2); }
+    .cs-box .cv { font-size:1.75rem; font-weight:800; color:var(--b1); line-height:1; }
+    .cs-box.hi .cv { color:white; }
+    .cs-box .cl { font-size:.6rem; font-weight:600; color:var(--t2); margin-top:3px; }
+    .cs-box.hi .cl { color:rgba(255,255,255,.8); }
+
+    .loyalty-card {
+      background:linear-gradient(140deg,#0D47A1,#1976D2);
+      border-radius:18px; padding:15px;
+      box-shadow:0 6px 28px rgba(13,71,161,.3);
+      position:relative; overflow:hidden;
+      margin-bottom:12px;
+    }
+    .loyalty-card::before {
+      content:''; position:absolute; top:-50px; right:-40px;
+      width:130px; height:130px; border-radius:50%;
+      background:rgba(255,255,255,.06);
+    }
+    .lc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
+    .lc-title { color:white; font-size:.88rem; font-weight:800; letter-spacing:.4px; }
+    .lc-cnt   { background:rgba(255,255,255,.2); color:white; font-size:.72rem; font-weight:700; padding:4px 11px; border-radius:20px; }
+
+    .stamp-grid {
+      display:grid; grid-template-columns:repeat(10,1fr); gap:4px;
+      position:relative; z-index:1;
+    }
+    .stamp-cell {
+      aspect-ratio:1; border-radius:4px;
+      border:1.5px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:center;
+      transition:all .25s;
+    }
+    .stamp-cell.filled {
+      background:white; border-color:white;
+      background-image:url('stamp.jpg');
+      background-size:cover;
+      background-position:center;
+    }
+    .stamp-cell.pop { animation:cellPop .35s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes cellPop { 0%{transform:scale(.3);opacity:.2} 65%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+
+    .lc-foot { display:flex; align-items:center; justify-content:space-between; margin-top:9px; }
+    .lc-foot-l { color:white; font-size:.82rem; font-weight:800; }
+    .lc-foot-r { color:rgba(255,255,255,.7); font-size:.7rem; }
+    .lc-bar-wrap { flex:1; margin:0 10px; background:rgba(255,255,255,.18); border-radius:6px; height:6px; overflow:hidden; }
+    .lc-bar { height:100%; background:rgba(255,255,255,.88); border-radius:6px; transition:width .5s ease; }
+
+    .action-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .act-btn {
+      border:none; border-radius:14px; padding:13px 8px;
+      font-size:.85rem; font-weight:700; cursor:pointer; font-family:inherit;
+      transition:transform .12s, box-shadow .12s;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+    }
+    .act-btn:active { transform:scale(.96); }
+    .act-btn .ai { font-size:1.25rem; }
+    .act-btn .as { font-size:.6rem; opacity:.78; font-weight:500; }
+    .act-btn.primary { background:var(--b2); color:white; box-shadow:0 4px 16px rgba(21,101,192,.35); }
+    .act-btn.primary:disabled { background:#BCC8E0; box-shadow:none; }
+    .act-btn.sec { background:var(--b6); color:var(--b2); }
+    .act-btn.sec:disabled { background:#F0F0F0; color:var(--t3); }
+
+    .log-item {
+      background:var(--b6); border-radius:12px; padding:10px 13px;
+      display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    }
+    .log-icon { font-size:1.3rem; }
+    .log-label { font-size:.83rem; font-weight:600; }
+    .log-date  { font-size:.68rem; color:var(--t3); margin-top:1px; }
+    .log-tag { margin-left:auto; font-size:.62rem; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .log-tag.earn { background:var(--green-bg); color:var(--green); }
+    .log-tag.use  { background:#FFF3E0; color:#E65100; }
+    .no-log { text-align:center; color:var(--t3); font-size:.82rem; padding:14px 0; }
+
+    /* ── SETTINGS ── */
+    .add-form { display:flex; gap:8px; margin-bottom:12px; }
+    .add-input {
+      flex:1; border:2px solid var(--border); border-radius:12px;
+      padding:10px 13px; font-size:.9rem; outline:none; font-family:inherit;
+      color:var(--text); transition:border-color .18s;
+    }
+    .add-input:focus { border-color:var(--b3); }
+    .add-btn {
+      background:var(--b2); color:white; border:none; border-radius:12px;
+      padding:10px 16px; font-size:.88rem; font-weight:700;
+      cursor:pointer; font-family:inherit; white-space:nowrap;
+    }
+    .sh-item {
+      background:var(--b6); border-radius:12px; padding:11px 13px;
+      display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    }
+    .sh-name { flex:1; font-size:.88rem; }
+    .sh-del {
+      width:27px; height:27px; border-radius:50%; border:none;
+      background:rgba(13,71,161,.12); color:var(--b2);
+      cursor:pointer; font-size:1rem; font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .danger-btn {
+      width:100%; border:2px solid #FFCDD2; border-radius:12px;
+      padding:11px; background:none; font-size:.85rem;
+      color:#E53935; cursor:pointer; font-family:inherit; font-weight:600;
+    }
+
+    /* ── Overlays ── */
+    .overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.48); z-index:300;
+      display:flex; align-items:center; justify-content:center; padding:22px;
+      opacity:0; pointer-events:none; transition:opacity .22s;
+    }
+    .overlay.show { opacity:1; pointer-events:all; }
+    .modal {
+      background:white; border-radius:24px; padding:28px 20px 20px;
+      text-align:center; max-width:300px; width:100%;
+      transform:scale(.88) translateY(16px);
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .overlay.show .modal { transform:scale(1) translateY(0); }
+    .mi { font-size:3.2rem; margin-bottom:9px; }
+    .mt { font-size:1.2rem; font-weight:800; color:var(--b1); margin-bottom:7px; }
+    .md { font-size:.83rem; color:var(--t2); line-height:1.65; margin-bottom:18px; }
+    .mbtn {
+      width:100%; background:linear-gradient(135deg,var(--b2),var(--b1));
+      color:white; border:none; border-radius:13px;
+      padding:13px; font-size:.92rem; font-weight:800;
+      cursor:pointer; font-family:inherit;
+    }
+    .mbtn.danger { background:linear-gradient(135deg,#EF5350,#C62828); }
+    .mbtn2 {
+      width:100%; border:2px solid var(--border); border-radius:13px;
+      padding:11px; background:none; font-size:.85rem;
+      color:var(--t2); cursor:pointer; margin-top:8px; font-family:inherit;
+    }
+    .m-lbl { font-size:.75rem; color:var(--t2); text-align:left; margin-bottom:5px; }
+    .m-input {
+      width:100%; border:2px solid var(--border); border-radius:11px;
+      padding:9px 13px; font-size:.88rem; outline:none; margin-bottom:13px;
+      font-family:inherit; color:var(--text); transition:border-color .18s;
+    }
+    .m-input:focus { border-color:var(--b3); }
+
+    /* ── Pagination ── */
+    .pager { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
+    .pager-btn {
+      width:32px; height:32px; border-radius:50%;
+      border:1.5px solid var(--border); background:white;
+      color:var(--t2); font-size:.8rem; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-family:inherit; transition:all .15s;
+    }
+    .pager-btn:disabled { opacity:.3; cursor:not-allowed; }
+    .pager-btn.active { background:var(--b2); color:white; border-color:var(--b2); }
+    .pager-info { font-size:.72rem; color:var(--t3); min-width:60px; text-align:center; }
+
+    /* confetti */
+    .cf { position:fixed; pointer-events:none; z-index:400; border-radius:2px; animation:cfall linear forwards; }
+    @keyframes cfall { 0%{transform:translateY(-10px) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(900deg);opacity:0} }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hdr-row">
+    <div>
+      <div class="hdr-title">🌟 習慣集點獎勵</div>
+      <div class="hdr-sub">習慣 +2 點・提醒事項 +1 點・集滿 50 換衣服</div>
+    </div>
+    <div class="pts-chip">
+      <div class="n" id="hdr-pts">0</div>
+      <div class="l">/ 50 點</div>
+    </div>
+  </div>
+  <div class="hdr-bar-wrap"><div class="hdr-bar" id="hdr-bar" style="width:0%"></div></div>
+  <div class="hdr-bar-lbl" id="hdr-lbl">還差 50 點</div>
+</div>
+
+<!-- TODAY PAGE -->
+<div id="page-today" class="page active">
+  <div class="date-lbl" id="date-lbl"></div>
+
+  <div class="summary-row">
+    <div class="sbox"><div class="sv" id="s-habits">0</div><div class="sl">習慣完成</div></div>
+    <div class="sbox"><div class="sv" id="s-tasks">0</div><div class="sl">提醒完成</div></div>
+    <div class="sbox"><div class="sv" id="s-pts">0</div><div class="sl">本輪累積點</div></div>
+  </div>
+
+  <!-- habits -->
+  <div class="list-section">
+    <div class="list-header">
+      每日習慣
+      <span class="badge">完成 +2 點</span>
+    </div>
+    <div id="habit-list"></div>
+  </div>
+
+  <!-- one-time tasks -->
+  <div class="list-section">
+    <div class="list-header">
+      一次性提醒事項
+      <span class="badge" style="background:#E8F5E9;color:#2E7D32">完成 +1 點</span>
+    </div>
+    <div id="task-list"></div>
+    <div id="task-add-row" style="display:flex;gap:8px;margin-top:4px">
+      <input id="quick-task" class="add-input" type="text" placeholder="新增提醒事項…" maxlength="30" style="font-size:.85rem;padding:8px 12px">
+      <button class="add-btn" id="quick-add-btn" style="font-size:.83rem;padding:8px 14px">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- DONE PAGE -->
+<div id="page-done" class="page">
+  <div class="date-lbl" id="done-date-lbl"></div>
+
+  <div class="list-section">
+    <div class="list-header">
+      今日已完成習慣
+      <span class="badge">點擊可取消</span>
+    </div>
+    <div id="done-habit-list"></div>
+    <div class="pager" id="pager-habits"></div>
+  </div>
+
+  <div class="list-section">
+    <div class="list-header">
+      已完成提醒事項
+      <span class="badge" style="background:#E8F5E9;color:#2E7D32">點擊可取消</span>
+    </div>
+    <div id="done-task-list"></div>
+    <div class="pager" id="pager-tasks"></div>
+  </div>
+</div>
+
+<!-- STAMP CARD PAGE -->
+<div id="page-card" class="page">
+
+  <div class="cs-row">
+    <div class="cs-box"><div class="cv" id="cs-earned">0</div><div class="cl">累積獲得 👗</div></div>
+    <div class="cs-box hi"><div class="cv" id="cs-remain">0</div><div class="cl">可用 ✨</div></div>
+    <div class="cs-box"><div class="cv" id="cs-used">0</div><div class="cl">已使用 🛍</div></div>
+  </div>
+
+  <div class="loyalty-card">
+    <div class="lc-top">
+      <div class="lc-title">👗 購衣集點卡</div>
+      <div class="lc-cnt" id="lc-cnt">0 / 50</div>
+    </div>
+    <div class="stamp-grid" id="stamp-grid"></div>
+    <div class="lc-foot">
+      <div class="lc-foot-l" id="lc-l">0 點</div>
+      <div class="lc-bar-wrap"><div class="lc-bar" id="lc-bar" style="width:0%"></div></div>
+      <div class="lc-foot-r" id="lc-r">還差 50 點</div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="act-btn primary" id="btn-redeem" disabled>
+      <span class="ai">🎁</span>兌換衣服
+      <span class="as" id="redeem-sub">還差 50 點</span>
+    </button>
+    <button class="act-btn sec" id="btn-use" disabled>
+      <span class="ai">🛍</span>用掉衣服
+      <span class="as" id="use-sub">沒有可用的衣服</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">異動紀錄</div>
+    <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div id="page-settings" class="page">
+  <div class="card">
+    <div class="card-title">每日習慣管理</div>
+    <div class="add-form">
+      <input id="new-habit" class="add-input" type="text" placeholder="例如：運動30分鐘" maxlength="20">
+      <button class="add-btn" id="add-habit-btn">新增</button>
+    </div>
+    <div id="sh-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">危險區域</div>
+    <button class="danger-btn" id="reset-btn">重置所有資料</button>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>打卡
+  </button>
+  <button class="nav-btn" id="nav-card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <rect x="2" y="5" width="20" height="14" rx="3"/>
+      <line x1="2" y1="10" x2="22" y2="10"/>
+      <line x1="6" y1="15" x2="10" y2="15"/><line x1="14" y1="15" x2="18" y2="15"/>
+    </svg>集點卡
+  </button>
+  <button class="nav-btn" id="nav-done">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <polyline points="9 11 12 14 22 4"/>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>已完成
+  </button>
+  <button class="nav-btn" id="nav-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>設定
+  </button>
+</nav>
+
+<!-- Overlays -->
+<div class="overlay" id="ov-redeem">
+  <div class="modal">
+    <div class="mi">🎉</div>
+    <div class="mt">集滿 50 點了！</div>
+    <div class="md">努力的習慣換來買一件衣服的資格，確定要兌換嗎？</div>
+    <button class="mbtn" id="confirm-redeem">✅ 確認兌換</button>
+    <button class="mbtn2" id="cancel-redeem">下次再換</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-use">
+  <div class="modal">
+    <div class="mi">🛍</div>
+    <div class="mt">用掉一件衣服</div>
+    <div class="md">記錄你買了哪件衣服</div>
+    <div class="m-lbl">衣服備註（可不填）</div>
+    <input id="use-note" class="m-input" type="text" placeholder="例如：黑色外套、夏季洋裝…" maxlength="30">
+    <button class="mbtn" id="confirm-use">🛍 確認使用</button>
+    <button class="mbtn2" id="cancel-use">取消</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-celebrate">
+  <div class="modal">
+    <div class="mi">🥳</div>
+    <div class="mt" id="cel-t">兌換成功！</div>
+    <div class="md" id="cel-d"></div>
+    <button class="mbtn" id="close-celebrate">太棒了！繼續加油</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-reset">
+  <div class="modal">
+    <div class="mi">⚠️</div>
+    <div class="mt">確定要重置嗎？</div>
+    <div class="md">所有習慣、點數、集點與衣服紀錄都將被清除，無法還原。</div>
+    <button class="mbtn danger" id="confirm-reset">確定全部清除</button>
+    <button class="mbtn2" id="cancel-reset">取消</button>
+  </div>
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────────
+const DEFAULTS = ['喝8杯水', '運動30分鐘', '閱讀20分鐘'];
+
+function mkState() {
+  return {
+    habits: [...DEFAULTS],
+    tasks: [],          // [{id, name, done, doneDate?}]
+    completions: {},    // {"YYYY-MM-DD": ["habitName",...]}
+    earned: 0,
+    used: 0,
+    log: []
+  };
+}
+
+function load() {
+  try {
+    const r = localStorage.getItem('habit_v3');
+    if (r) return Object.assign(mkState(), JSON.parse(r));
+  } catch(e) {}
+  return mkState();
+}
+
+let S = load();
+function save() { localStorage.setItem('habit_v3', JSON.stringify(S)); }
+
+// ── Points calculation (always derived, never stale) ──────────
+// habits: +2 pts each, tasks: +1 pt each
+function calcPts() {
+  let t = 0;
+  Object.values(S.completions).forEach(arr => { t += arr.length * 2; });
+  t += S.tasks.filter(tk => tk.done).length;
+  return t - S.earned * 50;
+}
+
+// ── Date helpers ──────────────────────────────────────────────
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+}
+function z(n) { return String(n).padStart(2,'0'); }
+function fmtFull(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  const days = ['日','一','二','三','四','五','六'];
+  return `${y} 年 ${m} 月 ${d} 日　星期${days[new Date(y,m-1,d).getDay()]}`;
+}
+function fmtShort(k) {
+  const [,m,d] = k.split('-').map(Number);
+  return `${m}/${d}`;
+}
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+// ── Pagination state ─────────────────────────────────────────
+let doneHabitPage = 0;
+let doneTaskPage = 0;
+
+function renderPager(current, total, type) {
+  let html = `<button class="pager-btn" onclick="pageDone('${type}',-1)" ${current === 0 ? 'disabled' : ''}>&lt;</button>`;
+  html += `<span class="pager-info">${current + 1} / ${total}</span>`;
+  html += `<button class="pager-btn" onclick="pageDone('${type}',1)" ${current >= total - 1 ? 'disabled' : ''}>&gt;</button>`;
+  return html;
+}
+
+function pageDone(type, dir) {
+  if (type === 'habit') doneHabitPage = Math.max(0, doneHabitPage + dir);
+  else doneTaskPage = Math.max(0, doneTaskPage + dir);
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────
+function render() {
+  const today   = todayKey();
+  const doneTdy = S.completions[today] || [];
+  const pts     = calcPts();
+  const pct     = Math.min(pts / 50 * 100, 100);
+  const remain  = S.earned - S.used;
+
+  // header
+  document.getElementById('hdr-pts').textContent = pts;
+  document.getElementById('hdr-bar').style.width  = pct + '%';
+  document.getElementById('hdr-lbl').textContent  = pts >= 50 ? '已集滿！快去兌換！' : `還差 ${50 - pts} 點`;
+
+  // date
+  document.getElementById('date-lbl').textContent = fmtFull(today);
+
+  // summary
+  document.getElementById('s-habits').textContent = doneTdy.length;
+  document.getElementById('s-tasks').textContent  = S.tasks.filter(tk => tk.done).length;
+  document.getElementById('s-pts').textContent    = pts;
+
+  // habits — today only shows UNCOMPLETED
+  const hl = document.getElementById('habit-list');
+  const unfinishedHabits = S.habits.filter(h => !doneTdy.includes(h));
+  if (S.habits.length === 0) {
+    hl.innerHTML = `<div class="empty-tip"><div class="ei">📋</div><p>還沒有習慣，去設定新增吧！</p><button class="pill-btn" data-goto="settings">前往設定</button></div>`;
+  } else if (unfinishedHabits.length === 0) {
+    hl.innerHTML = `<div class="empty-tip" style="padding:14px 10px"><div class="ei" style="font-size:1.6rem">🎉</div><p style="font-size:.8rem">今天的習慣全部完成了！</p></div>`;
+  } else {
+    hl.innerHTML = unfinishedHabits.map(h =>
+      `<div class="item-row" data-habit="${esc(h)}">
+        <div class="chk"></div>
+        <div class="item-name">${esc(h)}</div>
+        <div class="pts-badge">+2</div>
+      </div>`
+    ).join('');
+  }
+
+  // tasks — today only shows UNCOMPLETED
+  const tl = document.getElementById('task-list');
+  const pendingTasks = S.tasks.filter(tk => !tk.done);
+  if (S.tasks.length === 0) {
+    tl.innerHTML = `<div class="empty-tip" style="padding:14px 10px"><div class="ei" style="font-size:1.6rem">✍️</div><p style="font-size:.8rem">新增今天想完成的一次性事項</p></div>`;
+  } else if (pendingTasks.length === 0) {
+    tl.innerHTML = `<div class="empty-tip" style="padding:14px 10px"><div class="ei" style="font-size:1.6rem">✅</div><p style="font-size:.8rem">所有提醒事項已完成！</p></div>`;
+  } else {
+    tl.innerHTML = pendingTasks.map(tk =>
+      `<div class="item-row" data-task="${tk.id}">
+        <div class="chk"></div>
+        <div class="item-name">${esc(tk.name)}</div>
+        <div class="pts-badge">+1</div>
+      </div>`
+    ).join('');
+  }
+
+  // ── DONE PAGE (paginated, 5 per page) ──
+  document.getElementById('done-date-lbl').textContent = fmtFull(today);
+
+  const PER_PAGE = 5;
+
+  // done habits
+  const dhl = document.getElementById('done-habit-list');
+  const finishedHabits = S.habits.filter(h => doneTdy.includes(h));
+  if (finishedHabits.length === 0) {
+    dhl.innerHTML = `<div class="empty-tip" style="padding:14px 10px"><p style="font-size:.8rem;color:var(--t3)">還沒有完成任何習慣</p></div>`;
+    document.getElementById('pager-habits').innerHTML = '';
+  } else {
+    const hPages = Math.ceil(finishedHabits.length / PER_PAGE);
+    if (doneHabitPage >= hPages) doneHabitPage = hPages - 1;
+    const hSlice = finishedHabits.slice(doneHabitPage * PER_PAGE, (doneHabitPage + 1) * PER_PAGE);
+    dhl.innerHTML = hSlice.map(h =>
+      `<div class="item-row done" data-undo-habit="${esc(h)}">
+        <div class="chk"></div>
+        <div class="item-name">${esc(h)}</div>
+        <div class="pts-badge" style="background:var(--b3);color:white">✓ +2</div>
+      </div>`
+    ).join('');
+    document.getElementById('pager-habits').innerHTML = hPages > 1 ? renderPager(doneHabitPage, hPages, 'habit') : '';
+  }
+
+  // done tasks
+  const dtl = document.getElementById('done-task-list');
+  const doneTasks = S.tasks.filter(tk => tk.done);
+  if (doneTasks.length === 0) {
+    dtl.innerHTML = `<div class="empty-tip" style="padding:14px 10px"><p style="font-size:.8rem;color:var(--t3)">還沒有完成任何提醒事項</p></div>`;
+    document.getElementById('pager-tasks').innerHTML = '';
+  } else {
+    const tPages = Math.ceil(doneTasks.length / PER_PAGE);
+    if (doneTaskPage >= tPages) doneTaskPage = tPages - 1;
+    const tSlice = doneTasks.slice(doneTaskPage * PER_PAGE, (doneTaskPage + 1) * PER_PAGE);
+    dtl.innerHTML = tSlice.map(tk =>
+      `<div class="item-row task-done" data-undo-task="${tk.id}">
+        <div class="chk"></div>
+        <div class="item-name">${esc(tk.name)}</div>
+        <div class="pts-badge" style="background:#4CAF50;color:white">✓ +1</div>
+      </div>`
+    ).join('');
+    document.getElementById('pager-tasks').innerHTML = tPages > 1 ? renderPager(doneTaskPage, tPages, 'task') : '';
+  }
+
+  // stamp grid
+  document.getElementById('lc-cnt').textContent = `${pts} / 50`;
+  document.getElementById('lc-bar').style.width  = pct + '%';
+  document.getElementById('lc-l').textContent   = pts + ' 點';
+  document.getElementById('lc-r').textContent   = pts >= 50 ? '可以換衣服了！' : `還差 ${50 - pts} 點`;
+  document.getElementById('stamp-grid').innerHTML =
+    Array.from({length:50}, (_,i) =>
+      `<div class="stamp-cell${i < pts ? ' filled' : ''}"></div>`
+    ).join('');
+
+  // clothes stats
+  document.getElementById('cs-earned').textContent = S.earned;
+  document.getElementById('cs-remain').textContent = remain;
+  document.getElementById('cs-used').textContent   = S.used;
+
+  // buttons
+  const rBtn = document.getElementById('btn-redeem');
+  const rSub = document.getElementById('redeem-sub');
+  rBtn.disabled = pts < 50;
+  rSub.textContent = pts >= 50 ? '點擊立即兌換！' : `還差 ${50 - pts} 點`;
+
+  const uBtn = document.getElementById('btn-use');
+  const uSub = document.getElementById('use-sub');
+  uBtn.disabled = remain <= 0;
+  uSub.textContent = remain > 0 ? `還有 ${remain} 件可用` : '沒有可用的衣服';
+
+  // log
+  const logEl = document.getElementById('log-list');
+  logEl.innerHTML = S.log.length === 0
+    ? '<div class="no-log">還沒有異動紀錄</div>'
+    : [...S.log].reverse().map(e => `
+        <div class="log-item">
+          <div class="log-icon">${e.type === 'earn' ? '🎁' : '🛍'}</div>
+          <div>
+            <div class="log-label">${e.type === 'earn' ? '兌換一件衣服' : `使用衣服${e.note ? '：' + esc(e.note) : ''}`}</div>
+            <div class="log-date">${e.date}</div>
+          </div>
+          <div class="log-tag ${e.type}">${e.type === 'earn' ? '+1件' : '−1件'}</div>
+        </div>`).join('');
+
+  // settings habit list
+  document.getElementById('sh-list').innerHTML = S.habits.length === 0
+    ? '<div class="no-log">尚未新增任何習慣</div>'
+    : S.habits.map((h,i) => `
+        <div class="sh-item">
+          <div class="sh-name">${esc(h)}</div>
+          <button class="sh-del" data-del-habit="${i}">×</button>
+        </div>`).join('');
+}
+
+// ── Toggle habit (event delegation) ──────────────────────────
+document.getElementById('habit-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-habit]');
+  if (row) toggleHabit(row.dataset.habit);
+  const btn = e.target.closest('[data-goto]');
+  if (btn) go(btn.dataset.goto);
+});
+
+function toggleHabit(name) {
+  const today = todayKey();
+  if (!S.completions[today]) S.completions[today] = [];
+  const arr = S.completions[today];
+  const idx = arr.indexOf(name);
+  if (idx === -1) {
+    arr.push(name);
+  } else {
+    arr.splice(idx, 1);
+  }
+  save(); render();
+  const pts = calcPts();
+  if (pts >= 50 && idx === -1) {
+    confetti();
+    setTimeout(() => showOverlay('ov-redeem'), 400);
+  }
+}
+
+// ── Toggle task ───────────────────────────────────────────────
+document.getElementById('task-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-task]');
+  if (row) toggleTask(row.dataset.task);
+});
+
+function toggleTask(id) {
+  const tk = S.tasks.find(t => t.id === id);
+  if (!tk) return;
+  tk.done = !tk.done;
+  tk.doneDate = tk.done ? fmtShort(todayKey()) : null;
+  save(); render();
+  const pts = calcPts();
+  if (pts >= 50 && tk.done) {
+    confetti();
+    setTimeout(() => showOverlay('ov-redeem'), 400);
+  }
+}
+
+// ── Done page: undo habit / task (event delegation) ─────────
+document.getElementById('done-habit-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-undo-habit]');
+  if (row) toggleHabit(row.dataset.undoHabit);
+});
+document.getElementById('done-task-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-undo-task]');
+  if (row) toggleTask(row.dataset.undoTask);
+});
+
+// ── Add task (quick add on today page) ───────────────────────
+function addQuickTask(name) {
+  name = name.trim();
+  if (!name) return;
+  S.tasks.push({ id: uid(), name, done: false, doneDate: null });
+  save(); render();
+}
+document.getElementById('quick-add-btn').addEventListener('click', () => {
+  const el = document.getElementById('quick-task');
+  addQuickTask(el.value);
+  el.value = '';
+});
+document.getElementById('quick-task').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    addQuickTask(e.target.value);
+    e.target.value = '';
+  }
+});
+
+// ── Add / delete habits ───────────────────────────────────────
+document.getElementById('add-habit-btn').addEventListener('click', () => {
+  const el = document.getElementById('new-habit');
+  const name = el.value.trim();
+  if (!name || S.habits.includes(name)) {
+    el.style.borderColor = '#EF5350';
+    setTimeout(() => el.style.borderColor = '', 700);
+    return;
+  }
+  S.habits.push(name);
+  el.value = '';
+  save(); render();
+});
+document.getElementById('new-habit').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('add-habit-btn').click();
+});
+
+document.getElementById('sh-list').addEventListener('click', e => {
+  const btn = e.target.closest('[data-del-habit]');
+  if (!btn) return;
+  const i = Number(btn.dataset.delHabit);
+  const name = S.habits[i];
+  S.habits.splice(i, 1);
+  Object.keys(S.completions).forEach(d => {
+    const a = S.completions[d], j = a.indexOf(name);
+    if (j !== -1) a.splice(j, 1);
+  });
+  save(); render();
+});
+
+// ── Navigation ────────────────────────────────────────────────
+const PAGES = ['today','card','done','settings'];
+function go(page) {
+  PAGES.forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('active', p === page);
+    document.getElementById('nav-'+p).classList.toggle('active', p === page);
+  });
+  render();
+}
+PAGES.forEach(p => document.getElementById('nav-'+p).addEventListener('click', () => go(p)));
+
+// ── Overlays ──────────────────────────────────────────────────
+function showOverlay(id)  { document.getElementById(id).classList.add('show'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.overlay').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); })
+);
+
+// Redeem
+document.getElementById('btn-redeem').addEventListener('click', () => {
+  if (calcPts() >= 50) showOverlay('ov-redeem');
+});
+document.getElementById('confirm-redeem').addEventListener('click', () => {
+  closeOverlay('ov-redeem');
+  S.earned += 1;
+  S.log.push({ type:'earn', date: fmtShort(todayKey()) });
+  save(); render();
+  confetti();
+  setTimeout(() => {
+    document.getElementById('cel-t').textContent = '🎉 獲得一件衣服！';
+    document.getElementById('cel-d').textContent =
+      `目前共有 ${S.earned - S.used} 件衣服可用！\n繼續保持習慣，再來一件！`;
+    showOverlay('ov-celebrate');
+  }, 500);
+});
+document.getElementById('cancel-redeem').addEventListener('click',    () => closeOverlay('ov-redeem'));
+document.getElementById('close-celebrate').addEventListener('click',  () => closeOverlay('ov-celebrate'));
+
+// Use
+document.getElementById('btn-use').addEventListener('click', () => {
+  if (S.earned - S.used > 0) showOverlay('ov-use');
+});
+document.getElementById('confirm-use').addEventListener('click', () => {
+  const note = document.getElementById('use-note').value.trim();
+  document.getElementById('use-note').value = '';
+  closeOverlay('ov-use');
+  S.used += 1;
+  S.log.push({ type:'use', date: fmtShort(todayKey()), note });
+  save(); render();
+});
+document.getElementById('cancel-use').addEventListener('click', () => closeOverlay('ov-use'));
+
+// Reset
+document.getElementById('reset-btn').addEventListener('click',    () => showOverlay('ov-reset'));
+document.getElementById('confirm-reset').addEventListener('click', () => {
+  closeOverlay('ov-reset');
+  S = mkState();
+  save(); render();
+});
+document.getElementById('cancel-reset').addEventListener('click',  () => closeOverlay('ov-reset'));
+
+// ── Confetti ──────────────────────────────────────────────────
+function confetti() {
+  const cols = ['#1565C0','#42A5F5','#BBDEFB','#FFF176','#80CBC4','#CE93D8'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'cf';
+    const s = 6 + Math.random() * 8;
+    el.style.cssText = `left:${Math.random()*100}%;top:-10px;width:${s}px;height:${s}px;
+      background:${cols[Math.floor(Math.random()*cols.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${1.3+Math.random()*1.7}s;
+      animation-delay:${Math.random()*.9}s`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+// ── Escape ────────────────────────────────────────────────────
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
