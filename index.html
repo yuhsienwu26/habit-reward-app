@@ -915,7 +915,7 @@ function esc(s) {
 }
 
 // ── Sync from Apple Reminders (via iOS Shortcut URL) ─────────
-// Format: ?p=base64(pending names, ||| separated)&d=base64(done names, ||| separated)
+// Format: ?p=urlencoded(pending names, ||| separated)&d=urlencoded(done names, ||| separated)
 function handleSync() {
   const params = new URLSearchParams(window.location.search);
   const pData = params.get('p');  // pending (未完成)
@@ -923,8 +923,8 @@ function handleSync() {
   if (!pData && !dData) return;
 
   try {
-    const pending = pData ? atob(pData).split('|||').map(s=>s.trim()).filter(Boolean) : [];
-    const done    = dData ? atob(dData).split('|||').map(s=>s.trim()).filter(Boolean) : [];
+    const pending = pData ? pData.split('|||').map(s=>s.trim()).filter(Boolean) : [];
+    const done    = dData ? dData.split('|||').map(s=>s.trim()).filter(Boolean) : [];
     let newCompleted = 0;
 
     // Process pending reminders → add as new tasks
